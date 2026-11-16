@@ -5,7 +5,8 @@
 // Portability: HegelProtocol is Foundation-only and must build on Linux (a future Docker web app
 // will reuse it). HegelClient, HegelDiscovery, hegelctl and the development-only HegelFakeAmp / fakeamp use
 // Network.framework, so they are Apple-only and are declared only when the manifest is evaluated on a non-Linux host.
-// The SwiftUI apps live outside this package (App/, project.yml) and depend on its products.
+// HegelRemoteCore is the apps' logic layer (Apple-only: Observation, Network via HegelClient). The SwiftUI apps live
+// outside this package (App/, project.yml) and depend on its products.
 import PackageDescription
 
 var products: [Product] = [
@@ -24,6 +25,8 @@ products += [
     // Development only: an in-process H590 emulator (tests, app tests) and the same as a process (`swift run fakeamp`).
     .library(name: "HegelFakeAmp", targets: ["HegelFakeAmp"]),
     .executable(name: "fakeamp", targets: ["fakeamp"]),
+    // The apps' logic layer (controller, settings, skins, playback drivers): no SwiftUI, tested here and in Xcode.
+    .library(name: "HegelRemoteCore", targets: ["HegelRemoteCore"]),
 ]
 targets += [
     .target(name: "HegelClient", dependencies: ["HegelProtocol"]),
@@ -32,6 +35,8 @@ targets += [
     .target(name: "HegelFakeAmp"),
     .executableTarget(name: "fakeamp", dependencies: ["HegelFakeAmp"]),
     .testTarget(name: "HegelClientTests", dependencies: ["HegelProtocol", "HegelClient", "HegelFakeAmp"]),
+    .target(name: "HegelRemoteCore", dependencies: ["HegelProtocol", "HegelClient"]),
+    .testTarget(name: "HegelRemoteCoreTests", dependencies: ["HegelRemoteCore", "HegelProtocol", "HegelClient", "HegelFakeAmp"]),
     .testTarget(name: "HegelDiscoveryTests", dependencies: ["HegelProtocol", "HegelDiscovery"]),
 ]
 #endif
