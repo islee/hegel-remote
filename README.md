@@ -6,9 +6,9 @@ plus Siri / Shortcuts. Built around the H590.
 > Unofficial. Not affiliated with, endorsed by or supported by Hegel Music Systems AS. "Hegel" and model names are
 > used only to describe compatibility. No Hegel artwork or logos are used.
 
-| Silver skin, click wheel | Black skin, click wheel |
-|---|---|
-| ![Silver](Docs/screenshots/iphone-silver-wheel.png) | ![Black](Docs/screenshots/iphone-black-wheel.png) |
+| Light: Silver skin | Dark: Black skin | Settings: Appearance and App icon |
+|---|---|---|
+| ![Silver](Docs/screenshots/iphone-silver-wheel.png) | ![Black](Docs/screenshots/iphone-black-wheel.png) | ![Settings](Docs/screenshots/iphone-settings-dark.png) |
 
 ## What it does
 - Finds the amp on the LAN (Bonjour, confirmed on port 50001) or takes an IP; remembers it; picks the model
@@ -18,10 +18,39 @@ plus Siri / Shortcuts. Built around the H590.
 - Inputs can be renamed and disabled; each can be mapped to a **playback target** for the Prev / Play / Next row
   (Plexamp's player API, or the Mac's media keys). The Hegel protocol itself has no transport commands.
 - Custom buttons: a label plus an ordered list of actions (amp commands, HTTP requests for e.g. Home Assistant).
-- Skins are data (Silver, Black, OLED built in; paste your own JSON in Settings).
+- Skins are data (Silver, Black, OLED built in; paste your own JSON in Settings). The skin follows the system
+  theme: Settings > Appearance is System / Light / Dark, with a **light skin** and a **dark skin** (defaults Silver
+  and Black; any skin can go in either slot). A single skin chosen in an older version is used for both.
+- App icon: a neutral default (Silver Dial; Black Dial in dark mode; a monochrome version for iOS tinted mode) and
+  a per-model alternate (H590: a badge with the model name in a dot-matrix font), chosen in Settings > App icon.
+  Settings can suggest the connected model's icon; it is never applied without a tap.
 - Siri / Shortcuts via App Intents: "Turn off the amp in hegel-remote", "Mute the amp in hegel-remote", "Switch
   the amp to Pontus in hegel-remote", set volume, volume up/down. They work with the app closed.
 - Mac: a window plus a menu bar extra showing the volume with a popover remote.
+
+### Icons
+
+`python3 -I scripts/make_icon.py` (Pillow) regenerates every icon under `App/Assets.xcassets`; the output is
+committed and deterministic.
+
+| Asset | What | Used by |
+|---|---|---|
+| `AppIcon` | iOS light / dark / tinted + the Mac sizes | both apps (Finder, Home Screen, Dock when not running) |
+| `AppIcon-H590` | alternate iOS icon, light and dark | `UIApplication.setAlternateIconName("AppIcon-H590")` |
+| `DockIcon-{Default,H590}-{Light,Dark}` | 1024 px images on the Mac rounded plate | `NSApp.applicationIconImage` at runtime |
+
+On the Mac the Finder and the Dock show the default icon while the app is not running; only a running app can
+change its Dock image. iOS shows a system alert on every alternate-icon change.
+
+**Adding a model icon** (for example H390), three places:
+1. `scripts/make_icon.py`: add `"H390"` to `MODELS` (digits 0-9 and H, V exist in `GLYPHS`; add a glyph for any other
+   letter), then run the script and commit the PNGs and asset catalogs it writes.
+2. `Sources/HegelRemoteCore/IconChoice.swift`: add `"H390"` to `AppIcons.availableModelIcons`.
+3. `project.yml`: list the set in the iOS target's `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`
+   (space-separated: `AppIcon-H390 AppIcon-H590`).
+
+**Trademark note.** The model badges draw the model name as plain descriptive text in our own 5x7 dot-matrix font.
+They never use Hegel's wordmark, logo or typeface, and the app stays "unofficial" (see the notice at the top).
 
 Design and layering: `Docs/architecture.md`. Wire protocol and live findings: `Docs/protocol.md`.
 
@@ -42,7 +71,7 @@ Schemes: **HegelRemote** (iOS app + unit tests in the simulator) and **HegelRemo
 Command line, no signing (simulator / build check):
 
 ```sh
-swift test                                                                     # HegelKit + HegelRemoteCore, 89 tests
+swift test                                                                     # HegelKit + HegelRemoteCore
 xcodebuild -scheme HegelRemote    -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 xcodebuild -scheme HegelRemoteMac -destination 'platform=macOS'                 build CODE_SIGNING_ALLOWED=NO
 xcodebuild test -scheme HegelRemoteMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO              # 59 Core tests

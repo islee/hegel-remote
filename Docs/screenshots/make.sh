@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# make.sh: build the iOS app, run it in the simulator against `fakeamp`, and screenshot the main screen per skin.
+# make.sh: build the iOS app, run it in the simulator against `fakeamp`, and screenshot the main screen per skin
+# and per system appearance (light = Silver, dark = Black), plus the Settings screen.
 #
 # Usage: Docs/screenshots/make.sh [simulator name]      (default: iPhone 17)
 # Needs: xcodegen, a booted-able simulator, nothing else. Starts its own fakeamp on 127.0.0.1:50001 unless one is
@@ -31,15 +32,25 @@ xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --
 xcrun simctl uninstall "$UDID" "$BUNDLE_ID" 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
 
-shoot() { # <skin> <control> <file>
+# shoot <light skin> <dark skin> <control> <file> [extra launch args...]: the simulator's system appearance
+# (`simctl ui appearance`) decides which of the two skins shows, since the app's Appearance setting is System.
+shoot() {
+  local light="$1" dark="$2" control="$3" file="$4"; shift 4
   xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-  xcrun simctl launch "$UDID" "$BUNDLE_ID" -skinID "$1" -volumeControl "$2" -ampHost 127.0.0.1 -ampPort 50001 -ampModelID h590 >/dev/null
+  xcrun simctl launch "$UDID" "$BUNDLE_ID" -appearance system -lightSkinID "$light" -darkSkinID "$dark" \
+    -volumeControl "$control" -ampHost 127.0.0.1 -ampPort 50001 -ampModelID h590 "$@" >/dev/null
   sleep 3
-  xcrun simctl io "$UDID" screenshot "$OUT/$3" >/dev/null
-  echo "wrote $OUT/$3"
+  xcrun simctl io "$UDID" screenshot "$OUT/$file" >/dev/null
+  echo "wrote $OUT/$file"
 }
-shoot silver wheel iphone-silver-wheel.png
-shoot black wheel iphone-black-wheel.png
-shoot oled wheel iphone-oled-wheel.png
-shoot silver slider iphone-silver-slider.png
+xcrun simctl ui "$UDID" appearance light
+shoot silver black wheel iphone-silver-wheel.png
+shoot silver silver slider iphone-silver-slider.png
+shoot oled oled wheel iphone-oled-wheel.png
+xcrun simctl ui "$UDID" appearance dark
+shoot silver black wheel iphone-black-wheel.png
+# Settings: the app opens the sheet itself when launched with `-showSettings YES`.
+shoot silver black wheel iphone-settings-dark.png -showSettings YES -scrollToAppIcon YES
+xcrun simctl ui "$UDID" appearance light
+shoot silver black wheel iphone-settings-light.png -showSettings YES -scrollToAppIcon YES
 xcrun simctl status_bar "$UDID" clear >/dev/null 2>&1 || true

@@ -50,9 +50,27 @@ connection events to `phase`.
 
 ### SettingsStore (`Sources/HegelRemoteCore/SettingsStore.swift`)
 All persistence, UserDefaults-backed (free-account signing: no App Groups needed because intents run in the app
-process). Scalars under plain keys (so `-skinID silver` launch arguments override them, which the screenshot
-script uses); collections as JSON. Holds: `AmpAddress` (host, port, model id, name), `skinID`,
-`volumeControlOverride`, `[InputSetting]`, `[CustomButton]`, `[Skin]` user skins, the Plex client id.
+process). Scalars under plain keys (so `-lightSkinID silver` launch arguments override them, which the screenshot
+script uses); collections as JSON. Holds: `AmpAddress` (host, port, model id, name), `appearance`, the skin
+pairing (`lightSkinID`, `darkSkinID`), `iconChoice`, `suggestModelIcon`, `volumeControlOverride`,
+`[InputSetting]`, `[CustomButton]`, `[Skin]` user skins, the Plex client id.
+
+### Appearance, skin pairing, icon choice
+(`Appearance.swift`, `IconChoice.swift`, pure Core logic with tests.)
+- `AppearanceSetting` is `system` (default) / `light` / `dark`. `SkinPairing` names a light skin and a dark skin by
+  id (default Silver / Black; any skin in either slot). `SkinResolver.resolve(appearance:systemIsDark:pairing:skins:)`
+  returns the skin; a missing id falls back to Silver (light) or Black (dark).
+- `SettingsStore.skin` is that resolver applied to `appearance`, `systemIsDark` (not persisted) and the pairing.
+  The app side (`Views/ThemeSync.swift`, `followsTheme()`) sets `preferredColorScheme` from the appearance setting
+  (nil for System) and writes the SwiftUI `colorScheme` into `systemIsDark`. An explicit Light/Dark ignores
+  `systemIsDark`. Migration: the old single `skinID` key becomes both slots on first read, then is removed.
+- `IconChoice` is `.default` or `.model(id)`; `AppIcons.availableModelIcons` lists models whose artwork exists
+  (an unavailable stored choice resolves to the default) and `AppIcons.suggestion` offers the connected amp's icon
+  only if it exists and is not already chosen. `App/AppIconApplier.swift` applies it: iOS calls
+  `setAlternateIconName` only when the name differs and keeps a failure for Settings; macOS sets
+  `NSApp.applicationIconImage` from `DockIcon-<Default|MODEL>-<Light|Dark>` and re-applies on KVO of
+  `NSApp.effectiveAppearance` and on choice/appearance changes. The Finder and Dock show the default icon when the
+  Mac app is not running. Icon art: `scripts/make_icon.py` (see README "Icons", including how to add a model).
 
 ### Data, not code
 Per the project rule "one small interface, variations as data":
@@ -61,6 +79,7 @@ Per the project rule "one small interface, variations as data":
 |---|---|---|
 | Amp model | `AmpModel` (HegelKit: names, aliases, inputs) + `ModelCapabilities` (app: controls, volume range, support level, notes) | one row in each table |
 | Skin | `Skin` (Codable: colours, readout font, volume control) | a JSON file / pasted JSON; built-ins are the same type |
+| Model icon | `MODELS` in `make_icon.py`, `AppIcons.availableModelIcons`, `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` | one entry in each (README "Icons") |
 | Input | `InputSetting` (rename, enable, playback target) merged by `InputCatalog` | settings UI |
 | Playback target | `PlaybackTarget` enum case + one `PlaybackDriver` | one case + one driver, `PlaybackDrivers.make` |
 | Custom button | `CustomButton { label, [ButtonAction] }`, `ButtonAction = amp(AmpAction) | http(HTTPRequestSpec)` | settings editor |
