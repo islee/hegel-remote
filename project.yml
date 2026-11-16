@@ -49,6 +49,10 @@ targets:
     platform: iOS
     sources:
       - path: App
+        # WHY: XcodeGen writes each target's Info.plist and entitlements into App/Generated; without this exclude
+        # they are copied into every app bundle as resources, and the device install rejects the iOS app.
+        excludes:
+          - "Generated/**"
     dependencies:
       - package: HegelKit
         product: HegelProtocol
@@ -80,6 +84,10 @@ targets:
     platform: macOS
     sources:
       - path: App
+        # WHY: XcodeGen writes each target's Info.plist and entitlements into App/Generated; without this exclude
+        # they are copied into every app bundle as resources, and the device install rejects the iOS app.
+        excludes:
+          - "Generated/**"
     dependencies:
       - package: HegelKit
         product: HegelProtocol
