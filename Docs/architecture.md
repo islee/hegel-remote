@@ -98,10 +98,11 @@ unavailable the readout uses the system monospaced font.
   `HegelRemoteCoreTests` (59 tests): controller, intent path and custom buttons against `FakeAmp` on loopback
   (real sockets, real pacing); Plexamp driver and HTTP actions against `FakeHTTPServer`; skins, catalog, wheel
   math, readout and settings are pure.
-- `xcodebuild test -scheme HegelRemote -destination 'platform=iOS Simulator,...'` runs the same Core tests in the
-  simulator as a **non-hosted** bundle. App-hosted test bundles do not launch under Xcode 26.6 with XcodeGen
-  projects on this machine (also on a two-file hello-world project: "test runner hung" / unexpanded
-  `$(PRODUCT_BUNDLE_IDENTIFIER)`), which is one more reason the logic lives outside the app target.
+- `xcodebuild test -scheme HegelRemoteMac -destination 'platform=macOS'` and
+  `xcodebuild test -scheme HegelRemote -destination 'platform=iOS Simulator,...'` run the same Core tests as
+  **non-hosted** bundles (no app launch involved). On the development Mac the simulator's xctest runner hangs
+  before connecting under Xcode 26.6 for every project, hello-world included; the Mac destination works. Keeping
+  the logic in a package target is what makes the tests independent of that.
 - Interactive: `swift run fakeamp` is an H590 on 127.0.0.1:50001; the simulator shares the Mac's loopback.
   The real amp is never driven by tests or by development runs.
 

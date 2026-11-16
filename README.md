@@ -36,7 +36,8 @@ xcodegen generate                 # writes HegelRemote.xcodeproj from project.ym
 open HegelRemote.xcodeproj
 ```
 
-Schemes: **HegelRemote** (iOS app + unit tests) and **HegelRemoteMac** (Mac app, product `hegel-remote.app`).
+Schemes: **HegelRemote** (iOS app + unit tests in the simulator) and **HegelRemoteMac** (Mac app, product
+`hegel-remote.app`, + the same unit tests on the Mac).
 
 Command line, no signing (simulator / build check):
 
@@ -44,8 +45,14 @@ Command line, no signing (simulator / build check):
 swift test                                                                     # HegelKit + HegelRemoteCore, 89 tests
 xcodebuild -scheme HegelRemote    -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 xcodebuild -scheme HegelRemoteMac -destination 'platform=macOS'                 build CODE_SIGNING_ALLOWED=NO
-xcodebuild test -scheme HegelRemote -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -scheme HegelRemoteMac -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO              # 59 Core tests
+xcodebuild test -scheme HegelRemote -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO  # same tests, simulator
 ```
+
+The Core tests are the same files under `swift test`, the Mac test bundle and the simulator bundle. On the
+development Mac (Xcode 26.6, iOS 26.5/18.6 simulators) the simulator run fails with "The test runner hung before
+establishing connection" for every project, including a two-file hello-world one; the Mac destination and `swift test`
+are unaffected. If you hit it too: `xcrun simctl shutdown all`, erase the device, retry.
 
 ### Signing with a free Apple developer account
 `project.yml` leaves `DEVELOPMENT_TEAM` empty on purpose. In Xcode: select the `HegelRemote` target → *Signing &

@@ -136,6 +136,27 @@ targets:
         # No intents in the test bundle; without this the metadata extractor logs a warning for it.
         LM_SKIP_METADATA_EXTRACTION: YES
 
+  # The same tests on the Mac, for `xcodebuild test -scheme HegelRemoteMac -destination 'platform=macOS'`.
+  HegelRemoteMacTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/HegelRemoteCoreTests
+    dependencies:
+      - package: HegelKit
+        product: HegelRemoteCore
+      - package: HegelKit
+        product: HegelFakeAmp
+      - package: HegelKit
+        product: HegelClient
+      - package: HegelKit
+        product: HegelProtocol
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote.mac.tests
+        LM_SKIP_METADATA_EXTRACTION: YES
+
 schemes:
   HegelRemote:
     build:
@@ -151,5 +172,9 @@ schemes:
     build:
       targets:
         HegelRemoteMac: all
+        HegelRemoteMacTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets: [HegelRemoteMacTests]
