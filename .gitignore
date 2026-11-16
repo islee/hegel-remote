@@ -5,3 +5,6 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .worktree/
+# XcodeGen output (regenerate with `xcodegen generate`)
+HegelRemote.xcodeproj/
+App/Generated/
