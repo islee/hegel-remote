@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OLED Strip</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;800&amp;family=Manrope:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#c9cdd2}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #000000; color: #f4f6f8; font-family: Manrope, 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; padding: 60px 24px 32px; gap: 28px">
+  <div style="display: flex; justify-content: space-between; align-items: center">
+    <span style="font-size: 15px; font-weight: 600; color: #9aa0a6">H590</span>
+    <button aria-label="Power" style="height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid #33363a; background: #000000; color: #f4f6f8; font: 600 14px Manrope, sans-serif; display: flex; gap: 8px; align-items: center">
+      <span style="width: 8px; height: 8px; border-radius: 4px; background: #f4f6f8"></span>On
+    </button>
+  </div>
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 40px">
+    <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 168px; line-height: 0.9">33</span>
+    <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 24px; letter-spacing: 0.12em">NETWORK</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 20px">
+    <div style="height: 6px; border-radius: 3px; background: #1d1f22; display: flex">
+      <div style="width: 33%; height: 6px; border-radius: 3px; background: #f4f6f8"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6e747a"><span>0</span><span>Night limit 60</span><span>99</span></div>
+  </div>
+  <div style="display: flex; flex-direction: column; border-top: 1px solid #1d1f22; margin-top: auto">
+    <button style="height: 52px; background: none; border: none; border-bottom: 1px solid #1d1f22; color: #f4f6f8; font: 600 16px Manrope, sans-serif; display: flex; justify-content: space-between; align-items: center; padding: 0 2px">Network <span style="color: #f4f6f8">●</span></button>
+    <button style="height: 52px; background: none; border: none; border-bottom: 1px solid #1d1f22; color: #9aa0a6; font: 600 16px Manrope, sans-serif; display: flex; justify-content: space-between; align-items: center; padding: 0 2px">Pontus (XLR 1)</button>
+    <button style="height: 52px; background: none; border: none; border-bottom: 1px solid #1d1f22; color: #9aa0a6; font: 600 16px Manrope, sans-serif; display: flex; justify-content: space-between; align-items: center; padding: 0 2px">USB</button>
+    <button style="height: 52px; background: none; border: none; color: #9aa0a6; font: 600 16px Manrope, sans-serif; display: flex; justify-content: space-between; align-items: center; padding: 0 2px">All inputs ›</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

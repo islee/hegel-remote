@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mac menu bar and window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500;800&amp;family=Manrope:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#c9cdd2}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 760px; height: 520px; box-sizing: border-box; background: #2b2e33; font-family: Manrope, 'Helvetica Neue', Arial, sans-serif; color: #e8eaec; display: flex; flex-direction: column">
+  <div style="height: 28px; background: #1c1e21; display: flex; justify-content: flex-end; align-items: center; gap: 18px; padding: 0 16px; font-size: 13px; color: #c9cdd2">
+    <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; color: #f4f6f8; background: #3a3e43; padding: 1px 8px; border-radius: 4px">33</span>
+    <span>Wi-Fi</span><span>Mon 9:41</span>
+  </div>
+  <div style="display: flex; gap: 28px; padding: 22px; align-items: flex-start">
+    <div style="width: 300px; background: #121315; border: 1px solid #3a3e43; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 36px #000000">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-weight: 700; font-size: 14px">H590</span>
+        <button aria-label="Power" style="width: 32px; height: 32px; border-radius: 16px; border: 1px solid #3a3e43; background: #1b1d20; color: #d9a441; display: flex; align-items: center; justify-content: center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg>
+        </button>
+      </div>
+      <div style="background: #000000; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: flex-end">
+        <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 18px">NETWORK</span>
+        <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 40px; line-height: 0.85">33</span>
+      </div>
+      <div style="height: 6px; border-radius: 3px; background: #2a2d31; display: flex"><div style="width: 33%; height: 6px; border-radius: 3px; background: #e8eaec"></div></div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <button style="height: 30px; border-radius: 8px; border: 1px solid #d9a441; background: #1d1a14; color: #f4f6f8; font: 600 12px Manrope, sans-serif">Network</button>
+        <button style="height: 30px; border-radius: 8px; border: 1px solid #3a3e43; background: #1b1d20; color: #c9cdd2; font: 600 12px Manrope, sans-serif">Pontus</button>
+        <button style="height: 30px; border-radius: 8px; border: 1px solid #3a3e43; background: #1b1d20; color: #c9cdd2; font: 600 12px Manrope, sans-serif">USB</button>
+      </div>
+      <span style="font-size: 11px; color: #8b9096">Menu bar popover · ⌥↑/↓ volume</span>
+    </div>
+    <div style="flex: 1; min-width: 0; background: #0c0d0e; border: 1px solid #3a3e43; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 30px; background: #1b1d20; display: flex; align-items: center; gap: 7px; padding: 0 12px">
+        <span style="width: 11px; height: 11px; border-radius: 6px; background: #5b5f64"></span>
+        <span style="width: 11px; height: 11px; border-radius: 6px; background: #5b5f64"></span>
+        <span style="width: 11px; height: 11px; border-radius: 6px; background: #5b5f64"></span>
+        <span style="font-size: 12px; color: #8b9096; margin-left: 8px">Volum</span>
+      </div>
+      <div style="padding: 18px; display: flex; flex-direction: column; gap: 18px">
+        <div style="background: #000000; border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-end">
+          <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 20px">NETWORK</span>
+          <span style="font-family: Doto, 'Courier New', monospace; font-weight: 800; font-size: 52px; line-height: 0.85">33</span>
+        </div>
+        <div style="display: flex; justify-content: space-around">
+          <div style="width: 92px; height: 92px; border-radius: 46px; background: radial-gradient(circle at 35% 30%, #4a4e54 0%, #2a2d31 45%, #17191b 100%); border: 1px solid #44484e; display: flex; justify-content: center"><div style="width: 3px; height: 14px; margin-top: 8px; background: #d7dade; border-radius: 2px"></div></div>
+          <div style="width: 92px; height: 92px; border-radius: 46px; background: radial-gradient(circle at 35% 30%, #4a4e54 0%, #2a2d31 45%, #17191b 100%); border: 1px solid #44484e; display: flex; justify-content: center; transform: rotate(-30deg)"><div style="width: 3px; height: 14px; margin-top: 8px; background: #d7dade; border-radius: 2px"></div></div>
+        </div>
+        <span style="font-size: 12px; color: #8b9096">Same Front Panel layout as iPhone; scroll wheel turns the knob under the pointer</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":520}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
