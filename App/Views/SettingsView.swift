@@ -1,4 +1,4 @@
-// SettingsView.swift: amplifier, appearance, inputs, custom buttons, skins, about.
+// SettingsView.swift: amplifier, appearance and skins, app icon, inputs, custom buttons, about.
 //
 // Purpose: every persisted choice in one Form. Sub-editors (inputs, custom buttons) are their own files.
 // Context: on iOS this is a sheet; on macOS also the Settings scene. On dismiss MainView calls
@@ -11,6 +11,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(SettingsStore.self) private var settings
     @Environment(AmpController.self) private var controller
+    @Environment(AppIconApplier.self) private var iconApplier
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @State private var showSetup = false
     @State private var skinJSON = ""
@@ -19,10 +21,17 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var settings = settings
         NavigationStack {
+            ScrollViewReader { proxy in
             Form {
                 amplifierSection
-                Section("Appearance") {
-                    Picker("Skin", selection: $settings.skinID) {
+                Section {
+                    Picker("Appearance", selection: $settings.appearance) {
+                        ForEach(AppearanceSetting.allCases) { Text($0.label).tag($0) }
+                    }
+                    Picker("Light skin", selection: $settings.skinPairing.lightID) {
+                        ForEach(settings.allSkins) { skin in Text(skin.name).tag(skin.id) }
+                    }
+                    Picker("Dark skin", selection: $settings.skinPairing.darkID) {
                         ForEach(settings.allSkins) { skin in Text(skin.name).tag(skin.id) }
                     }
                     Picker("Volume control", selection: Binding(
@@ -33,7 +42,13 @@ struct SettingsView: View {
                         Text("Click wheel").tag(VolumeControlKind.wheel.rawValue)
                         Text("Slider").tag(VolumeControlKind.slider.rawValue)
                     }
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("Appearance follows the system unless you pick Light or Dark. Each appearance has its own skin; any skin can go in either slot.")
                 }
+                .id("appearance")
+                iconSection
                 Section {
                     NavigationLink("Inputs") { InputsEditor() }
                     NavigationLink("Custom buttons") { CustomButtonsEditor() }
@@ -48,6 +63,14 @@ struct SettingsView: View {
                 }
             }
             .formStyle(.grouped)
+            // `-scrollToAppIcon YES` (Docs/screenshots/make.sh) scrolls so Appearance and App icon are in view.
+            .task {
+                if UserDefaults.standard.bool(forKey: "scrollToAppIcon") {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    proxy.scrollTo("appearance", anchor: UnitPoint(x: 0.5, y: -0.05))
+                }
+            }
+            }
             .navigationTitle("Settings")
             .toolbar {
                 #if os(iOS)
@@ -95,6 +118,42 @@ struct SettingsView: View {
         }
     }
 
+    private var iconSection: some View {
+        @Bindable var settings = settings
+        return Section {
+            ForEach(AppIcons.choices, id: \.self) { choice in
+                Button {
+                    settings.iconChoice = choice
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(choice.dockImageName(dark: colorScheme == .dark))
+                            .resizable().scaledToFit().frame(width: 40, height: 40)
+                        Text(choice.label)
+                        Spacer()
+                        if settings.effectiveIconChoice == choice {
+                            Image(systemName: "checkmark").foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            if let suggestion = settings.suggestedIcon {
+                Button("Use the \(suggestion.label) icon for your amp") { settings.iconChoice = suggestion }
+            }
+            Toggle("Suggest the connected model's icon", isOn: $settings.suggestModelIcon)
+            if let error = iconApplier.lastError { Text(error).font(.footnote).foregroundStyle(.red) }
+        } header: {
+            Text("App icon")
+        } footer: {
+            #if os(macOS)
+            Text("The Dock shows the chosen icon while the app runs. The Finder and the Dock show the default icon when it is not running.")
+            #else
+            Text("iOS confirms each icon change with a system alert. The default icon also follows light, dark and tinted home screens.")
+            #endif
+        }
+    }
+
     private var skinsSection: some View {
         Section {
             ForEach(settings.userSkins) { skin in
@@ -124,7 +183,8 @@ struct SettingsView: View {
     private func importSkin() {
         do {
             let skin = try settings.addUserSkin(json: Data(skinJSON.utf8))
-            settings.skinID = skin.id
+            // Use the imported skin in the slot that is showing now, so the paste has a visible effect.
+            if settings.skin.isDark { settings.skinPairing.darkID = skin.id } else { settings.skinPairing.lightID = skin.id }
             skinJSON = ""
             skinImportError = nil
         } catch {
@@ -134,7 +194,9 @@ struct SettingsView: View {
 
     private func removeSkin(_ skin: Skin) {
         settings.userSkins.removeAll { $0.id == skin.id }
-        if settings.skinID == skin.id { settings.skinID = Skin.defaultID }
+        let pairing = settings.skinPairing
+        if pairing.lightID == skin.id { settings.skinPairing.lightID = SkinPairing.default.lightID }
+        if pairing.darkID == skin.id { settings.skinPairing.darkID = SkinPairing.default.darkID }
     }
 
     private func copyCurrentSkin() {

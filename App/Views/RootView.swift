@@ -24,7 +24,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: controller.lastError)
-        .preferredColorScheme(settings.skin.colorScheme)
+        .followsTheme()
     }
 }
 

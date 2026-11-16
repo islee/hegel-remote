@@ -12,6 +12,7 @@ import SwiftUI
 struct HegelRemoteApp: App {
     @State private var settings: SettingsStore
     @State private var controller: AmpController
+    @State private var iconApplier: AppIconApplier
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -19,6 +20,7 @@ struct HegelRemoteApp: App {
         let settings = SettingsStore.shared
         _settings = State(initialValue: settings)
         _controller = State(initialValue: AmpController(settings: settings))
+        _iconApplier = State(initialValue: AppIconApplier(settings: settings))
     }
 
     var body: some Scene {
@@ -29,6 +31,7 @@ struct HegelRemoteApp: App {
             MenuBarView()
                 .environment(settings)
                 .environment(controller)
+                .environment(iconApplier)
         } label: {
             Text(controller.displayVolume.map(String.init) ?? "–")
                 .monospacedDigit()
@@ -39,6 +42,8 @@ struct HegelRemoteApp: App {
             SettingsView()
                 .environment(settings)
                 .environment(controller)
+                .environment(iconApplier)
+                .followsTheme()
                 .frame(minWidth: 480, minHeight: 520)
         }
         #endif
@@ -48,6 +53,10 @@ struct HegelRemoteApp: App {
         RootView()
             .environment(settings)
             .environment(controller)
+            .environment(iconApplier)
+            // Apply on launch and whenever the choice (or, on the Mac, the appearance setting) changes.
+            .onChange(of: settings.effectiveIconChoice, initial: true) { iconApplier.apply() }
+            .onChange(of: settings.appearance) { iconApplier.apply() }
     }
 
     private func scenePhaseChanged(_ phase: ScenePhase) {

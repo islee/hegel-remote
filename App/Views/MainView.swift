@@ -9,7 +9,8 @@ import SwiftUI
 struct MainView: View {
     @Environment(SettingsStore.self) private var settings
     @Environment(AmpController.self) private var controller
-    @State private var showSettings = false
+    // `-showSettings YES` opens the sheet at launch (Docs/screenshots/make.sh).
+    @State private var showSettings = UserDefaults.standard.bool(forKey: "showSettings")
 
     var body: some View {
         let skin = settings.skin

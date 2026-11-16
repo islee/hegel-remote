@@ -41,8 +41,6 @@ extension Skin {
             return .system(size: size, weight: .black, design: .monospaced)
         }
     }
-
-    var colorScheme: ColorScheme { isDark ? .dark : .light }
 }
 
 /// Section caption: small caps with wide tracking ("INPUTS").

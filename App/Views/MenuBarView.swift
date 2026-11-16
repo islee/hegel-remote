@@ -64,7 +64,7 @@ struct MenuBarView: View {
         .background(skin.background)
         .foregroundStyle(skin.foreground)
         .tint(skin.accent)
-        .preferredColorScheme(skin.colorScheme)
+        .followsTheme()
     }
 }
 #endif
