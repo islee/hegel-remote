@@ -56,6 +56,8 @@ func makeDefaults() -> UserDefaults {
         defaults.set("127.0.0.1", forKey: "ampHost")
         defaults.set("slider", forKey: "volumeControl")
         let s = SettingsStore(defaults: defaults)
+        // A legacy dark skin lands in the dark slot.
+        s.systemIsDark = true
         #expect(s.skin == .oled && s.volumeControl == .slider)
         #expect(s.ampAddress == AmpAddress(host: "127.0.0.1"))
     }
@@ -77,22 +79,36 @@ func makeDefaults() -> UserDefaults {
         #expect(SettingsStore(defaults: defaults).skin == .oled)
     }
 
-    /// A user who picked one skin before the pairing existed keeps it in both slots.
-    @Test func legacySkinIDMigratesToBothSlots() {
+    /// A user who picked one skin before the pairing existed keeps it in its matching slot, and the app still
+    /// follows the system theme.
+    @Test func legacySkinIDMigratesToItsMatchingSlot() {
         let defaults = makeDefaults()
         defaults.set("black", forKey: "skinID")
         let s = SettingsStore(defaults: defaults)
-        #expect(s.skinPairing == SkinPairing(lightID: "black", darkID: "black"))
+        #expect(s.skinPairing == SkinPairing(lightID: "silver", darkID: "black"))
         #expect(s.appearance == .system)
         s.systemIsDark = false
-        #expect(s.skin == .black)
+        #expect(s.skin == .silver)
         s.systemIsDark = true
         #expect(s.skin == .black)
         // Migrated once: the pair is stored, the legacy key is gone, and a later instance reads the pair.
         #expect(defaults.string(forKey: "skinID") == nil)
-        s.skinPairing.lightID = "silver"
+        s.skinPairing.lightID = "oled"
         let again = SettingsStore(defaults: defaults)
-        #expect(again.skinPairing == SkinPairing(lightID: "silver", darkID: "black"))
+        #expect(again.skinPairing == SkinPairing(lightID: "oled", darkID: "black"))
+    }
+
+    /// Build f7c36c7 stored the legacy skin in both slots; that pair is repaired once, then left alone.
+    @Test func bothSlotsPairFromEarlierBuildIsRepairedOnce() {
+        let defaults = makeDefaults()
+        defaults.set("black", forKey: "lightSkinID")
+        defaults.set("black", forKey: "darkSkinID")
+        let s = SettingsStore(defaults: defaults)
+        #expect(s.skinPairing == SkinPairing(lightID: "silver", darkID: "black"))
+        // A deliberate same-skin pair chosen after the repair stays.
+        s.skinPairing = SkinPairing(lightID: "oled", darkID: "oled")
+        let again = SettingsStore(defaults: defaults)
+        #expect(again.skinPairing == SkinPairing(lightID: "oled", darkID: "oled"))
     }
 
     @Test func newKeysBeatTheLegacyKey() {

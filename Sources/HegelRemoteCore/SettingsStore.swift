@@ -18,6 +18,8 @@ public final class SettingsStore {
         // `skinID` is the pre-pairing single-skin key; it is only read, once, to migrate.
         static let skinID = "skinID", volumeControl = "volumeControl"
         static let appearance = "appearance", lightSkinID = "lightSkinID", darkSkinID = "darkSkinID"
+        // Set once the both-slots migration of build f7c36c7 has been repaired (see `loadPairing`).
+        static let pairingRepaired = "pairingRepaired"
         static let iconChoice = "iconChoice", suggestModelIcon = "suggestModelIcon"
         static let inputSettings = "inputSettings", customButtons = "customButtons", userSkins = "userSkins"
         static let plexClientID = "plexClientID"
@@ -159,14 +161,26 @@ public final class SettingsStore {
         defaults.set(try? JSONEncoder().encode(value), forKey: key)
     }
 
-    /// New keys win; otherwise the old single `skinID` (if the user ever picked one) serves both slots and is
-    /// rewritten as the pair, so the legacy key is read exactly once.
+    /// New keys win; otherwise the old single `skinID` (if the user ever picked one) is migrated into its matching
+    /// slot and rewritten as the pair, so the legacy key is read exactly once.
+    /// NOTE: build f7c36c7 migrated the legacy skin into BOTH slots. Installs that ran it have `light == dark`; that
+    /// pair is repaired once (flag `pairingRepaired`), after which a deliberate same-skin pair is left alone.
     private static func loadPairing(from defaults: UserDefaults) -> SkinPairing {
         let light = defaults.string(forKey: Key.lightSkinID)
         let dark = defaults.string(forKey: Key.darkSkinID)
         if light != nil || dark != nil {
-            return SkinPairing(lightID: light ?? SkinPairing.default.lightID, darkID: dark ?? SkinPairing.default.darkID)
+            var pairing = SkinPairing(lightID: light ?? SkinPairing.default.lightID, darkID: dark ?? SkinPairing.default.darkID)
+            if !defaults.bool(forKey: Key.pairingRepaired) {
+                if pairing.lightID == pairing.darkID {
+                    pairing = SkinPairing(migratingSingle: pairing.lightID)
+                    defaults.set(pairing.lightID, forKey: Key.lightSkinID)
+                    defaults.set(pairing.darkID, forKey: Key.darkSkinID)
+                }
+                defaults.set(true, forKey: Key.pairingRepaired)
+            }
+            return pairing
         }
+        defaults.set(true, forKey: Key.pairingRepaired)
         guard let legacy = defaults.string(forKey: Key.skinID) else { return .default }
         let migrated = SkinPairing(migratingSingle: legacy)
         defaults.set(migrated.lightID, forKey: Key.lightSkinID)

@@ -33,7 +33,10 @@ import Testing
 
     @Test func defaultPairingIsSilverAndBlack() {
         #expect(SkinPairing.default == SkinPairing(lightID: "silver", darkID: "black"))
-        #expect(SkinPairing(migratingSingle: "oled") == SkinPairing(lightID: "oled", darkID: "oled"))
+        #expect(SkinPairing(migratingSingle: "oled") == SkinPairing(lightID: "silver", darkID: "oled"))
+        #expect(SkinPairing(migratingSingle: "black") == SkinPairing(lightID: "silver", darkID: "black"))
+        #expect(SkinPairing(migratingSingle: "silver") == SkinPairing(lightID: "silver", darkID: "black"))
+        #expect(SkinPairing(migratingSingle: "gone") == .default)
     }
 
     @Test func settingsAndPairingRoundTripThroughJSON() throws {

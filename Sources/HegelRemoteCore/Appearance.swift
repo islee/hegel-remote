@@ -43,9 +43,18 @@ public struct SkinPairing: Hashable, Codable, Sendable {
 
     public static let `default` = SkinPairing(lightID: Skin.silver.id, darkID: Skin.black.id)
 
-    /// Migration from the single-skin setting: the one skin the user picked serves both slots.
-    public init(migratingSingle skinID: String) {
-        self.init(lightID: skinID, darkID: skinID)
+    /// Migration from the single-skin setting: the skin the user picked goes into the slot that matches its own
+    /// darkness and the other slot keeps its default, so the app still changes with the system theme.
+    /// WHY not both slots: with one skin in both, following the system changed nothing on screen (owner report,
+    /// 2026-11-16). An id not in `skins` (a deleted user skin) leaves the default pairing.
+    public init(migratingSingle skinID: String, skins: [Skin] = Skin.builtIns) {
+        guard let skin = skins.first(where: { $0.id == skinID }) else {
+            self = .default
+            return
+        }
+        self = skin.isDark
+            ? SkinPairing(lightID: SkinPairing.default.lightID, darkID: skin.id)
+            : SkinPairing(lightID: skin.id, darkID: SkinPairing.default.darkID)
     }
 }
 
