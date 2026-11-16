@@ -1,6 +1,6 @@
 # HegelKit sources
 
-Protocol and networking core for Volum (Hegel amplifier remote). Protocol facts: `Docs/protocol.md`.
+Protocol and networking core for hegel-remote (Hegel amplifier remote). Protocol facts: `Docs/protocol.md`.
 
 | Target | Platform | Role |
 |---|---|---|

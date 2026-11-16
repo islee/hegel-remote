@@ -1,5 +1,5 @@
 // swift-tools-version: 6.0
-// HegelKit: protocol + networking core for the Volum remote (Hegel amplifiers, TCP 50001).
+// HegelKit: protocol + networking core for hegel-remote (Hegel amplifiers, TCP 50001).
 // No third-party dependencies; Swift 6 language mode (strict concurrency) for every target.
 //
 // Portability: HegelProtocol is Foundation-only and must build on Linux (a future Docker web app

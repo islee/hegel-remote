@@ -1,4 +1,4 @@
-# Volum
+# hegel-remote
 
 An open-source remote for Hegel amplifiers that support IP control (TCP port 50001): iPhone and Mac, SwiftUI.
 
