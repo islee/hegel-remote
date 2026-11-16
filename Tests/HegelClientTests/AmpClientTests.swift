@@ -2,6 +2,7 @@ import Foundation
 import HegelProtocol
 import Testing
 @testable import HegelClient
+import HegelFakeAmp
 
 /// Polls until `condition` holds or the timeout passes. Returns the final value of the condition.
 func eventually(timeout: TimeInterval = 5, _ condition: @Sendable () async -> Bool) async -> Bool {

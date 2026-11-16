@@ -1,5 +1,8 @@
-// FakeAmp: in-process emulation of a Hegel amp for tests (NWListener on 127.0.0.1, ephemeral port).
+// FakeAmp.swift: in-process emulation of a Hegel amp (NWListener on 127.0.0.1).
 //
+// Purpose: a stand-in for the real H590 in unit tests (HegelKit and the app) and for interactive development
+//   through the `fakeamp` executable, so the owner's amp is never driven by tests or by a half-built UI.
+// Context: Apple-only (Network.framework). Development-only library; the apps never link it.
 // Mirrors the behaviour verified on a real H590: several simultaneous clients, every state reply broadcast
 // to ALL clients, replies to one read concatenated into one write, `-e.1` for anything malformed (including a
 // packet preceded by LF), still answers while powered off. The `r` timer is stored and echoed, never enforced
@@ -7,27 +10,32 @@
 import Foundation
 import Network
 
-final class FakeAmp: @unchecked Sendable {
-    struct Snapshot: Equatable { var power = true, input = 12, volume = 33, mute = false, timer = "~" }
+public final class FakeAmp: @unchecked Sendable {
+    public struct Snapshot: Equatable, Sendable {
+        public var power = true, input = 12, volume = 33, mute = false, timer = "~"
+        public init() {}
+    }
 
     private let queue = DispatchQueue(label: "FakeAmp")
     private var listener: NWListener!
     private var clients: [ObjectIdentifier: (conn: NWConnection, buffer: [UInt8])] = [:]
     private var snap = Snapshot()
     private var log: [String] = []
-    private(set) var port: UInt16 = 0
+    public private(set) var port: UInt16 = 0
     private var _picky = false
 
     /// Emulates the real amp's measured quirk: of the packets arriving in one read, only the first is processed.
-    var dropsBackToBackPackets: Bool {
+    public var dropsBackToBackPackets: Bool {
         get { queue.sync { _picky } }
         set { queue.sync { _picky = newValue } }
     }
 
-    static func start() async throws -> FakeAmp {
+    /// Starts listening on 127.0.0.1. `port` 0 (the default, for tests) picks an ephemeral port; `fakeamp` uses 50001.
+    public static func start(port requestedPort: UInt16 = 0) async throws -> FakeAmp {
         let amp = FakeAmp()
         let params = NWParameters.tcp
-        params.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
+        params.requiredLocalEndpoint = .hostPort(
+            host: "127.0.0.1", port: NWEndpoint.Port(rawValue: requestedPort) ?? .any)
         amp.listener = try NWListener(using: params)
         amp.listener.newConnectionHandler = { conn in amp.accept(conn) }
         let port: UInt16 = try await withCheckedThrowingContinuation { c in
@@ -48,7 +56,7 @@ final class FakeAmp: @unchecked Sendable {
         return amp
     }
 
-    func stop() {
+    public func stop() {
         queue.sync {
             listener.cancel()
             for c in clients.values { c.conn.cancel() }
@@ -58,12 +66,12 @@ final class FakeAmp: @unchecked Sendable {
 
     // MARK: Test hooks
 
-    var snapshot: Snapshot { queue.sync { snap } }
-    var receivedPackets: [String] { queue.sync { log } }
-    var clientCount: Int { queue.sync { clients.count } }
+    public var snapshot: Snapshot { queue.sync { snap } }
+    public var receivedPackets: [String] { queue.sync { log } }
+    public var clientCount: Int { queue.sync { clients.count } }
 
     /// Closes every client connection; the listener stays up so clients can reconnect.
-    func dropAllClients() {
+    public func dropAllClients() {
         queue.sync {
             for c in clients.values { c.conn.cancel() }
             clients.removeAll()
@@ -71,12 +79,29 @@ final class FakeAmp: @unchecked Sendable {
     }
 
     /// A front-panel change: mutate state and broadcast it, as the real amp does.
-    func frontPanel(volume: Int) {
+    public func frontPanel(volume: Int) {
         queue.sync {
             snap.volume = volume
             broadcast("-v.\(volume)\r")
         }
     }
+
+    public func frontPanel(input: Int) {
+        queue.sync {
+            snap.input = input
+            broadcast("-i.\(input)\r")
+        }
+    }
+
+    public func frontPanel(power: Bool) {
+        queue.sync {
+            snap.power = power
+            broadcast("-p.\(power ? 1 : 0)\r")
+        }
+    }
+
+    /// Lines received so far, oldest first; cleared by `clearLog()`.
+    public func clearLog() { queue.sync { log.removeAll() } }
 
     // MARK: Connection handling
 

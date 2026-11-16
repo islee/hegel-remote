@@ -1,0 +1,194 @@
+# project.yml: XcodeGen spec for the hegel-remote apps. `xcodegen generate` writes HegelRemote.xcodeproj (gitignored).
+#
+# Two app targets share every file under App/ (platform differences are `#if os(...)` in code), and both depend
+# on the HegelKit package in this same directory. DEVELOPMENT_TEAM is intentionally empty: set your team in
+# Xcode (Signing & Capabilities) or pass DEVELOPMENT_TEAM=XXXXXXXXXX to xcodebuild. See README.md.
+name: HegelRemote
+options:
+  bundleIdPrefix: io.github.islee
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+
+packages:
+  HegelKit:
+    path: .
+
+# Shared Info.plist content; each target adds its platform keys.
+_info_common: &info_common
+  CFBundleDisplayName: hegel-remote
+  CFBundleShortVersionString: $(MARKETING_VERSION)
+  CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+  NSLocalNetworkUsageDescription: hegel-remote finds and controls your Hegel amplifier (and a mapped player such as Plexamp) on your local network.
+  NSBonjourServices: [_raop._tcp, _airplay._tcp]
+  # LAN devices speak plain http (the amp has no TLS; Plexamp and Home Assistant are usually http on a LAN).
+  NSAppTransportSecurity:
+    NSAllowsArbitraryLoads: true
+    NSAllowsLocalNetworking: true
+
+targets:
+  HegelRemote:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        # WHY: XcodeGen writes each target's Info.plist and entitlements into App/Generated; without this exclude
+        # they are copied into every app bundle as resources, and the device install rejects the iOS app.
+        excludes:
+          - "Generated/**"
+    dependencies:
+      - package: HegelKit
+        product: HegelProtocol
+      - package: HegelKit
+        product: HegelClient
+      - package: HegelKit
+        product: HegelDiscovery
+      - package: HegelKit
+        product: HegelRemoteCore
+    info:
+      path: App/Generated/Info-iOS.plist
+      properties:
+        <<: *info_common
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIRequiresFullScreen: false
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Alternate icons (Settings > App icon): one appiconset per model, listed here and in
+        # Core's AppIcons.availableModelIcons. INCLUDE_ALL puts them in the bundle's CFBundleIcons.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-H590
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        PRODUCT_MODULE_NAME: HegelRemote
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UIUserInterfaceStyle: Automatic
+        SUPPORTS_MACCATALYST: NO
+
+  HegelRemoteMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        # WHY: XcodeGen writes each target's Info.plist and entitlements into App/Generated; without this exclude
+        # they are copied into every app bundle as resources, and the device install rejects the iOS app.
+        excludes:
+          - "Generated/**"
+    dependencies:
+      - package: HegelKit
+        product: HegelProtocol
+      - package: HegelKit
+        product: HegelClient
+      - package: HegelKit
+        product: HegelDiscovery
+      - package: HegelKit
+        product: HegelRemoteCore
+    info:
+      path: App/Generated/Info-macOS.plist
+      properties:
+        <<: *info_common
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        LSApplicationCategoryType: public.app-category.music
+    entitlements:
+      path: App/Generated/HegelRemoteMac.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    settings:
+      base:
+        # WHY a different bundle id and product name: with both apps named HegelRemote.app and sharing one bundle id,
+        # xcodebuild resolved the iOS test host against this target and its TestHostBundleIdentifier stayed unexpanded.
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote.mac
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_MODULE_NAME: HegelRemoteMac
+        # WHY a different product name: both apps would otherwise be "HegelRemote.app", and xcodebuild then
+        # resolves the iOS test host against the wrong target (TestHostBundleIdentifier stays unexpanded).
+        PRODUCT_NAME: hegel-remote
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+
+  # Unit tests for the logic layer, as a NON-hosted bundle: xcodebuild's app-hosted test launch is broken for
+  # XcodeGen projects on Xcode 26.6 here ("Simulator device failed to launch $(PRODUCT_BUNDLE_IDENTIFIER)", also
+  # on a two-file hello-world project). The same tests run under `swift test` on macOS.
+  HegelRemoteTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/HegelRemoteCoreTests
+    dependencies:
+      - package: HegelKit
+        product: HegelRemoteCore
+      - package: HegelKit
+        product: HegelFakeAmp
+      - package: HegelKit
+        product: HegelClient
+      - package: HegelKit
+        product: HegelProtocol
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote.tests
+        # No intents in the test bundle; without this the metadata extractor logs a warning for it.
+        LM_SKIP_METADATA_EXTRACTION: YES
+
+  # The same tests on the Mac, for `xcodebuild test -scheme HegelRemoteMac -destination 'platform=macOS'`.
+  HegelRemoteMacTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/HegelRemoteCoreTests
+    dependencies:
+      - package: HegelKit
+        product: HegelRemoteCore
+      - package: HegelKit
+        product: HegelFakeAmp
+      - package: HegelKit
+        product: HegelClient
+      - package: HegelKit
+        product: HegelProtocol
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote.mac.tests
+        LM_SKIP_METADATA_EXTRACTION: YES
+
+schemes:
+  HegelRemote:
+    build:
+      targets:
+        HegelRemote: all
+        HegelRemoteTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [HegelRemoteTests]
+  HegelRemoteMac:
+    build:
+      targets:
+        HegelRemoteMac: all
+        HegelRemoteMacTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [HegelRemoteMacTests]
