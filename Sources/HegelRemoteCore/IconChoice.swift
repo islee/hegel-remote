@@ -1,7 +1,7 @@
 // IconChoice.swift: which app icon the user wants, and the data about which model icons exist.
 //
 // Purpose: pure logic for the "App icon" setting: the choice type, its storage form, the names the platforms
-//   need (iOS alternate icon name, Mac Dock image name) and the "suggest the connected model's icon" rule.
+//   need (iOS alternate icon name, Mac Dock image name) and the "icon follows the amp model" rule.
 // Context: the artwork comes from scripts/make_icon.py (`MODELS`); `AppIcons.availableModelIcons` must list the
 //   same models, plus the alternate name in project.yml. Adding a model icon is data in those three places.
 // Dependencies: Foundation.
@@ -73,12 +73,8 @@ public enum AppIcons {
         isAvailable(choice) ? choice : .default
     }
 
-    /// The icon to suggest for the connected amp, or nil: suggestion off, no connected model, no icon for that
-    /// model, or it is already the current choice.
-    public static func suggestion(connectedModelID: String?, current: IconChoice, enabled: Bool) -> IconChoice? {
-        guard enabled, let id = connectedModelID?.uppercased() else { return nil }
-        let candidate = IconChoice.model(id)
-        guard isAvailable(candidate), effective(current) != candidate else { return nil }
-        return candidate
+    /// The icon for an amp model: its own artwork when it has some, else the default icon.
+    public static func icon(forModelID id: String) -> IconChoice {
+        effective(.model(id.uppercased()))
     }
 }

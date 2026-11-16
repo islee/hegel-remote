@@ -23,7 +23,7 @@ plus Siri / Shortcuts. Built around the H590.
   and Black; any skin can go in either slot). A single skin chosen in an older version is used for both.
 - App icon: a neutral default (Silver Dial; Black Dial in dark mode; a monochrome version for iOS tinted mode) and
   a per-model alternate (H590: a badge with the model name in a dot-matrix font), chosen in Settings > App icon.
-  Settings can suggest the connected model's icon; it is never applied without a tap.
+  By default the icon follows the amp model (Settings > Model); pick one by hand under App icon to stop that.
 - Siri / Shortcuts via App Intents: "Turn off the amp in hegel-remote", "Mute the amp in hegel-remote", "Switch
   the amp to Pontus in hegel-remote", set volume, volume up/down. They work with the app closed.
 - Mac: a window plus a menu bar extra showing the volume with a popover remote.

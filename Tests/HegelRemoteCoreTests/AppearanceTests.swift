@@ -71,12 +71,9 @@ import Testing
         #expect(AppIcons.effective(.model("H590")) == .model("H590"))
     }
 
-    @Test func suggestionRules() {
-        #expect(AppIcons.suggestion(connectedModelID: "h590", current: .default, enabled: true) == .model("H590"))
-        #expect(AppIcons.suggestion(connectedModelID: "H590", current: .default, enabled: true) == .model("H590"))
-        #expect(AppIcons.suggestion(connectedModelID: "h590", current: .model("H590"), enabled: true) == nil)
-        #expect(AppIcons.suggestion(connectedModelID: "h590", current: .default, enabled: false) == nil)
-        #expect(AppIcons.suggestion(connectedModelID: "h390", current: .default, enabled: true) == nil)
-        #expect(AppIcons.suggestion(connectedModelID: nil, current: .default, enabled: true) == nil)
+    @Test func iconForModel() {
+        #expect(AppIcons.icon(forModelID: "h590") == .model("H590"))
+        #expect(AppIcons.icon(forModelID: "H590") == .model("H590"))
+        #expect(AppIcons.icon(forModelID: "h390") == .default)
     }
 }

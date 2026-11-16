@@ -73,9 +73,9 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .toolbar {
-                #if os(iOS)
+                // WHY on both platforms: on the Mac this view is also a sheet (gear button), and without a Done
+                // button Esc was the only way to close it (owner report, 2026-11-16).
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-                #endif
             }
             .sheet(isPresented: $showSetup) {
                 SetupView().environment(settings).environment(controller)
@@ -121,8 +121,11 @@ struct SettingsView: View {
     private var iconSection: some View {
         @Bindable var settings = settings
         return Section {
+            Toggle("Match the amplifier model", isOn: $settings.iconFollowsModel)
             ForEach(AppIcons.choices, id: \.self) { choice in
                 Button {
+                    // Picking an icon by hand stops it following the model.
+                    settings.iconFollowsModel = false
                     settings.iconChoice = choice
                 } label: {
                     HStack(spacing: 12) {
@@ -138,10 +141,6 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
-            if let suggestion = settings.suggestedIcon {
-                Button("Use the \(suggestion.label) icon for your amp") { settings.iconChoice = suggestion }
-            }
-            Toggle("Suggest the connected model's icon", isOn: $settings.suggestModelIcon)
             if let error = iconApplier.lastError { Text(error).font(.footnote).foregroundStyle(.red) }
         } header: {
             Text("App icon")

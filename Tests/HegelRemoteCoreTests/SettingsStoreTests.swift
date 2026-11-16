@@ -28,7 +28,7 @@ func makeDefaults() -> UserDefaults {
         a.skinPairing = SkinPairing(lightID: "oled", darkID: "black")
         a.appearance = .dark
         a.iconChoice = .model("H590")
-        a.suggestModelIcon = false
+        a.iconFollowsModel = false
         a.volumeControlOverride = .slider
         a.update(InputSetting(number: 1, name: "Pontus", isEnabled: true, playbackTarget: .plexamp(host: "192.168.0.187")))
         a.update(InputSetting(number: 2, isEnabled: false))
@@ -39,7 +39,7 @@ func makeDefaults() -> UserDefaults {
         #expect(b.ampAddress == a.ampAddress)
         #expect(b.model == .h390 && b.capabilities.support == .untested)
         #expect(b.skinPairing == a.skinPairing && b.appearance == .dark && b.skin == .black)
-        #expect(b.iconChoice == .model("H590") && b.suggestModelIcon == false)
+        #expect(b.iconChoice == .model("H590") && b.iconFollowsModel == false)
         #expect(b.volumeControl == .slider)
         #expect(b.input(number: 1)?.name == "Pontus")
         #expect(b.input(number: 1)?.playbackTarget == .plexamp(host: "192.168.0.187", port: 32500))
@@ -127,20 +127,19 @@ func makeDefaults() -> UserDefaults {
         #expect(s.skin.id == "custom")
     }
 
-    @Test func iconChoiceDefaultsAndSuggestion() {
+    @Test func iconFollowsTheModelByDefault() {
         let s = SettingsStore(defaults: makeDefaults())
-        #expect(s.iconChoice == .default && s.effectiveIconChoice == .default && s.suggestModelIcon)
-        #expect(s.suggestedIcon == nil)  // no amp yet
+        // No amp yet: the model falls back to H590, which has an icon.
+        #expect(s.iconFollowsModel && s.effectiveIconChoice == .model("H590"))
         s.ampAddress = AmpAddress(host: "h", modelID: "h590")
-        #expect(s.suggestedIcon == .model("H590"))
-        s.iconChoice = .model("H590")
-        #expect(s.suggestedIcon == nil)  // already chosen
-        s.iconChoice = .default
-        s.suggestModelIcon = false
-        #expect(s.suggestedIcon == nil)
+        #expect(s.effectiveIconChoice == .model("H590"))
         s.ampAddress = AmpAddress(host: "h", modelID: "h390")
-        s.suggestModelIcon = true
-        #expect(s.suggestedIcon == nil)  // no H390 icon yet
+        #expect(s.effectiveIconChoice == .default)  // no H390 artwork yet
+        // Turning it off applies the stored choice.
+        s.iconFollowsModel = false
+        #expect(s.effectiveIconChoice == .default)
+        s.iconChoice = .model("H590")
+        #expect(s.effectiveIconChoice == .model("H590"))
     }
 
     @Test func forgetAndUnknownSkinFallBack() {

@@ -20,7 +20,7 @@ public final class SettingsStore {
         static let appearance = "appearance", lightSkinID = "lightSkinID", darkSkinID = "darkSkinID"
         // Set once the both-slots migration of build f7c36c7 has been repaired (see `loadPairing`).
         static let pairingRepaired = "pairingRepaired"
-        static let iconChoice = "iconChoice", suggestModelIcon = "suggestModelIcon"
+        static let iconChoice = "iconChoice", iconFollowsModel = "iconFollowsModel"
         static let inputSettings = "inputSettings", customButtons = "customButtons", userSkins = "userSkins"
         static let plexClientID = "plexClientID"
     }
@@ -54,9 +54,10 @@ public final class SettingsStore {
         didSet { defaults.set(iconChoice.storageValue, forKey: Key.iconChoice) }
     }
 
-    /// Offer the connected amp's icon in Settings when one exists (never applied without the user's tap).
-    public var suggestModelIcon: Bool {
-        didSet { defaults.set(suggestModelIcon, forKey: Key.suggestModelIcon) }
+    /// The app icon follows the amp model (Settings > Model or discovery) when that model has an icon; the stored
+    /// `iconChoice` applies only when this is off. Default on (owner, 2026-11-16: "selecting model … should change icon").
+    public var iconFollowsModel: Bool {
+        didSet { defaults.set(iconFollowsModel, forKey: Key.iconFollowsModel) }
     }
 
     /// nil = use the skin's own default.
@@ -94,7 +95,7 @@ public final class SettingsStore {
         appearance = defaults.string(forKey: Key.appearance).flatMap(AppearanceSetting.init(rawValue:)) ?? .system
         skinPairing = Self.loadPairing(from: defaults)
         iconChoice = IconChoice(storageValue: defaults.string(forKey: Key.iconChoice))
-        suggestModelIcon = defaults.object(forKey: Key.suggestModelIcon) as? Bool ?? true
+        iconFollowsModel = defaults.object(forKey: Key.iconFollowsModel) as? Bool ?? true
         volumeControlOverride = defaults.string(forKey: Key.volumeControl).flatMap(VolumeControlKind.init(rawValue:))
         inputSettings = Self.load([InputSetting].self, key: Key.inputSettings, from: defaults) ?? []
         // First launch ships one example preset; an emptied list stays empty (the key then holds `[]`).
@@ -117,12 +118,10 @@ public final class SettingsStore {
         SkinResolver.resolve(appearance: appearance, systemIsDark: systemIsDark, pairing: skinPairing, skins: allSkins)
     }
 
-    /// The icon to apply: the stored choice, or the default when its artwork does not exist.
-    public var effectiveIconChoice: IconChoice { AppIcons.effective(iconChoice) }
-
-    /// The connected amp's icon, when suggestions are on and it is not already chosen.
-    public var suggestedIcon: IconChoice? {
-        AppIcons.suggestion(connectedModelID: ampAddress?.modelID, current: iconChoice, enabled: suggestModelIcon)
+    /// The icon to apply: the model's icon while `iconFollowsModel` is on (the default icon for a model without
+    /// artwork), otherwise the stored choice, or the default when its artwork does not exist.
+    public var effectiveIconChoice: IconChoice {
+        iconFollowsModel ? AppIcons.icon(forModelID: model.id) : AppIcons.effective(iconChoice)
     }
 
     public var volumeControl: VolumeControlKind { volumeControlOverride ?? skin.volumeControl }

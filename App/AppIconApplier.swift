@@ -1,7 +1,7 @@
 // AppIconApplier.swift: makes the app icon match `SettingsStore.iconChoice` at runtime.
 //
 // Purpose: iOS swaps the home-screen icon with `setAlternateIconName`; the Mac sets the Dock icon image.
-// Context: the pure choice logic (names, availability, suggestion) is `IconChoice`/`AppIcons` in Core.
+// Context: the pure choice logic (names, availability, follow-the-model rule) is `IconChoice`/`AppIcons` in Core.
 //   iOS: the call shows a system alert, so it runs only when the wanted name differs from the current one, and a
 //   failure is kept in `lastError` for Settings to show (the stored choice is kept; the next change retries).
 //   macOS: `NSApp.applicationIconImage` only lasts while the app runs. The Finder and the Dock show the default
