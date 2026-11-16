@@ -74,6 +74,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_MODULE_NAME: HegelRemote
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_UIUserInterfaceStyle: Automatic
@@ -113,6 +114,7 @@ targets:
         # WHY a different bundle id and product name: with both apps named HegelRemote.app and sharing one bundle id,
         # xcodebuild resolved the iOS test host against this target and its TestHostBundleIdentifier stayed unexpanded.
         PRODUCT_BUNDLE_IDENTIFIER: io.github.islee.hegelremote.mac
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_MODULE_NAME: HegelRemoteMac
         # WHY a different product name: both apps would otherwise be "HegelRemote.app", and xcodebuild then
         # resolves the iOS test host against the wrong target (TestHostBundleIdentifier stays unexpanded).
