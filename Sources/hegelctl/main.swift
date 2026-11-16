@@ -23,8 +23,23 @@ usage: hegelctl [--host <ip>] [--port 50001] [--json] [--no-keepalive] <command>
 --no-keepalive skips the -r.3 reset-timer packet the client normally sends on connect and every 2 minutes.
 """
 
+// WHY: amp replies, Bonjour names and error text come from the network; escape control characters so a device
+// on the LAN can't inject terminal escape sequences into text-mode output. JSON output is escaped by JSONSerialization.
+func printable(_ s: String) -> String {
+    var out = ""
+    for scalar in s.unicodeScalars {
+        let v = scalar.value
+        if v < 0x20 || (0x7F...0x9F).contains(v) {
+            out += String(format: "\\x%02X", v)
+        } else {
+            out.unicodeScalars.append(scalar)
+        }
+    }
+    return out
+}
+
 func fail(_ message: String, code: Int32 = 1) -> Never {
-    FileHandle.standardError.write(Data((message + "\n").utf8))
+    FileHandle.standardError.write(Data((printable(message) + "\n").utf8))
     exit(code)
 }
 
@@ -54,8 +69,8 @@ func describe(_ e: AmpEvent) -> String {
     case .mute(let m): "mute=\(m ? "on" : "off")"
     case .resetTimer(let m): "reset-timer=\(m.map(String.init) ?? "stopped")"
     case .error(let c): "error=\(c)"
-    case .unrecognized(let raw): "unrecognized=\(raw)"
-    case .connection(let s): "connection=\(s)"
+    case .unrecognized(let raw): "unrecognized=\(printable(raw))"
+    case .connection(let s): "connection=\(printable(String(describing: s)))"
     }
 }
 
@@ -150,7 +165,7 @@ if verb == "discover" {
             print(json(["name": amp.name, "model": amp.model?.id as Any? ?? NSNull(), "host": amp.host,
                         "port": Int(amp.port), "state": stateObject(amp.state)]))
         } else {
-            print("\(amp.host):\(amp.port)  \(amp.model?.displayName ?? "?")  \(amp.name)  \(line(amp.state))")
+            print(printable("\(amp.host):\(amp.port)  \(amp.model?.displayName ?? "?")  \(amp.name)  \(line(amp.state))"))
         }
     }
     if found == 0 { FileHandle.standardError.write(Data("no amps found\n".utf8)); exit(1) }
