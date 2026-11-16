@@ -25,7 +25,10 @@ func makeDefaults() -> UserDefaults {
         let defaults = makeDefaults()
         let a = SettingsStore(defaults: defaults)
         a.ampAddress = AmpAddress(host: "127.0.0.1", port: 50002, modelID: "h390", name: "Desk")
-        a.skinID = "black"
+        a.skinPairing = SkinPairing(lightID: "oled", darkID: "black")
+        a.appearance = .dark
+        a.iconChoice = .model("H590")
+        a.suggestModelIcon = false
         a.volumeControlOverride = .slider
         a.update(InputSetting(number: 1, name: "Pontus", isEnabled: true, playbackTarget: .plexamp(host: "192.168.0.187")))
         a.update(InputSetting(number: 2, isEnabled: false))
@@ -35,7 +38,9 @@ func makeDefaults() -> UserDefaults {
         let b = SettingsStore(defaults: defaults)
         #expect(b.ampAddress == a.ampAddress)
         #expect(b.model == .h390 && b.capabilities.support == .untested)
-        #expect(b.skinID == "black" && b.volumeControl == .slider)
+        #expect(b.skinPairing == a.skinPairing && b.appearance == .dark && b.skin == .black)
+        #expect(b.iconChoice == .model("H590") && b.suggestModelIcon == false)
+        #expect(b.volumeControl == .slider)
         #expect(b.input(number: 1)?.name == "Pontus")
         #expect(b.input(number: 1)?.playbackTarget == .plexamp(host: "192.168.0.187", port: 32500))
         #expect(b.enabledInputs.map(\.number).contains(2) == false)
@@ -45,7 +50,7 @@ func makeDefaults() -> UserDefaults {
     }
 
     @Test func launchArgumentStyleScalarsAreRead() {
-        // Simulates `-skinID oled -ampHost 127.0.0.1` from the arguments domain by writing plain keys.
+        // Simulates `-skinID oled (the legacy key) -ampHost 127.0.0.1` from the arguments domain by writing plain keys.
         let defaults = makeDefaults()
         defaults.set("oled", forKey: "skinID")
         defaults.set("127.0.0.1", forKey: "ampHost")
@@ -55,13 +60,82 @@ func makeDefaults() -> UserDefaults {
         #expect(s.ampAddress == AmpAddress(host: "127.0.0.1"))
     }
 
+    @Test func pairingDefaultsAndLaunchArguments() {
+        let s = SettingsStore(defaults: makeDefaults())
+        #expect(s.appearance == .system && s.skinPairing == .default)
+        #expect(s.skin == .silver)
+        s.systemIsDark = true
+        #expect(s.skin == .black)
+        s.appearance = .light
+        #expect(s.skin == .silver)
+
+        // Launch arguments: `-appearance dark -lightSkinID silver -darkSkinID oled`.
+        let defaults = makeDefaults()
+        defaults.set("dark", forKey: "appearance")
+        defaults.set("silver", forKey: "lightSkinID")
+        defaults.set("oled", forKey: "darkSkinID")
+        #expect(SettingsStore(defaults: defaults).skin == .oled)
+    }
+
+    /// A user who picked one skin before the pairing existed keeps it in both slots.
+    @Test func legacySkinIDMigratesToBothSlots() {
+        let defaults = makeDefaults()
+        defaults.set("black", forKey: "skinID")
+        let s = SettingsStore(defaults: defaults)
+        #expect(s.skinPairing == SkinPairing(lightID: "black", darkID: "black"))
+        #expect(s.appearance == .system)
+        s.systemIsDark = false
+        #expect(s.skin == .black)
+        s.systemIsDark = true
+        #expect(s.skin == .black)
+        // Migrated once: the pair is stored, the legacy key is gone, and a later instance reads the pair.
+        #expect(defaults.string(forKey: "skinID") == nil)
+        s.skinPairing.lightID = "silver"
+        let again = SettingsStore(defaults: defaults)
+        #expect(again.skinPairing == SkinPairing(lightID: "silver", darkID: "black"))
+    }
+
+    @Test func newKeysBeatTheLegacyKey() {
+        let defaults = makeDefaults()
+        defaults.set("oled", forKey: "skinID")
+        defaults.set("silver", forKey: "lightSkinID")
+        let s = SettingsStore(defaults: defaults)
+        #expect(s.skinPairing == SkinPairing(lightID: "silver", darkID: SkinPairing.default.darkID))
+    }
+
+    @Test func userSkinCanFillASlot() throws {
+        let s = SettingsStore(defaults: makeDefaults())
+        let custom = try s.addUserSkin(json: try Skin.oled.encodeJSON().replacingID("custom"))
+        s.skinPairing.darkID = custom.id
+        s.appearance = .dark
+        #expect(s.skin.id == "custom")
+    }
+
+    @Test func iconChoiceDefaultsAndSuggestion() {
+        let s = SettingsStore(defaults: makeDefaults())
+        #expect(s.iconChoice == .default && s.effectiveIconChoice == .default && s.suggestModelIcon)
+        #expect(s.suggestedIcon == nil)  // no amp yet
+        s.ampAddress = AmpAddress(host: "h", modelID: "h590")
+        #expect(s.suggestedIcon == .model("H590"))
+        s.iconChoice = .model("H590")
+        #expect(s.suggestedIcon == nil)  // already chosen
+        s.iconChoice = .default
+        s.suggestModelIcon = false
+        #expect(s.suggestedIcon == nil)
+        s.ampAddress = AmpAddress(host: "h", modelID: "h390")
+        s.suggestModelIcon = true
+        #expect(s.suggestedIcon == nil)  // no H390 icon yet
+    }
+
     @Test func forgetAndUnknownSkinFallBack() {
         let s = SettingsStore(defaults: makeDefaults())
         s.ampAddress = AmpAddress(host: "h")
         s.forgetAmp()
         #expect(s.ampAddress == nil)
-        s.skinID = "missing"
+        s.skinPairing = SkinPairing(lightID: "missing", darkID: "missing")
         #expect(s.skin == .silver)
+        s.systemIsDark = true
+        #expect(s.skin == .black)
     }
 }
 

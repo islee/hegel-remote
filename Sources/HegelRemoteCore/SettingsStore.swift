@@ -3,7 +3,7 @@
 // Purpose: a single source of truth for the remembered amp, skin choice, control choice, input settings,
 //   custom buttons and user skins. Views bind to it; intents read it; tests give it an isolated suite.
 // Context: free-account signing (no App Groups), so plain UserDefaults is enough: intents run inside the app
-//   process. Scalars are stored under plain keys so launch arguments (`-skinID silver`) override them, which
+//   process. Scalars are stored under plain keys so launch arguments (`-lightSkinID silver`) override them, which
 //   the screenshot script relies on; collections are JSON blobs.
 // Dependencies: Foundation, HegelProtocol, the Core model types.
 import Foundation
@@ -15,7 +15,10 @@ public final class SettingsStore {
 
     enum Key {
         static let ampHost = "ampHost", ampPort = "ampPort", ampModelID = "ampModelID", ampName = "ampName"
+        // `skinID` is the pre-pairing single-skin key; it is only read, once, to migrate.
         static let skinID = "skinID", volumeControl = "volumeControl"
+        static let appearance = "appearance", lightSkinID = "lightSkinID", darkSkinID = "darkSkinID"
+        static let iconChoice = "iconChoice", suggestModelIcon = "suggestModelIcon"
         static let inputSettings = "inputSettings", customButtons = "customButtons", userSkins = "userSkins"
         static let plexClientID = "plexClientID"
     }
@@ -31,8 +34,27 @@ public final class SettingsStore {
         }
     }
 
-    public var skinID: String {
-        didSet { defaults.set(skinID, forKey: Key.skinID) }
+    public var appearance: AppearanceSetting {
+        didSet { defaults.set(appearance.rawValue, forKey: Key.appearance) }
+    }
+
+    public var skinPairing: SkinPairing {
+        didSet {
+            defaults.set(skinPairing.lightID, forKey: Key.lightSkinID)
+            defaults.set(skinPairing.darkID, forKey: Key.darkSkinID)
+        }
+    }
+
+    /// The current system scheme, pushed in by the apps from the SwiftUI `colorScheme`. Not persisted.
+    public var systemIsDark = false
+
+    public var iconChoice: IconChoice {
+        didSet { defaults.set(iconChoice.storageValue, forKey: Key.iconChoice) }
+    }
+
+    /// Offer the connected amp's icon in Settings when one exists (never applied without the user's tap).
+    public var suggestModelIcon: Bool {
+        didSet { defaults.set(suggestModelIcon, forKey: Key.suggestModelIcon) }
     }
 
     /// nil = use the skin's own default.
@@ -67,7 +89,10 @@ public final class SettingsStore {
         } else {
             ampAddress = nil
         }
-        skinID = defaults.string(forKey: Key.skinID) ?? Skin.defaultID
+        appearance = defaults.string(forKey: Key.appearance).flatMap(AppearanceSetting.init(rawValue:)) ?? .system
+        skinPairing = Self.loadPairing(from: defaults)
+        iconChoice = IconChoice(storageValue: defaults.string(forKey: Key.iconChoice))
+        suggestModelIcon = defaults.object(forKey: Key.suggestModelIcon) as? Bool ?? true
         volumeControlOverride = defaults.string(forKey: Key.volumeControl).flatMap(VolumeControlKind.init(rawValue:))
         inputSettings = Self.load([InputSetting].self, key: Key.inputSettings, from: defaults) ?? []
         // First launch ships one example preset; an emptied list stays empty (the key then holds `[]`).
@@ -85,7 +110,18 @@ public final class SettingsStore {
 
     public var allSkins: [Skin] { Skin.builtIns + userSkins }
 
-    public var skin: Skin { allSkins.first { $0.id == skinID } ?? Skin.silver }
+    /// The skin to draw now: appearance setting + system scheme + pairing.
+    public var skin: Skin {
+        SkinResolver.resolve(appearance: appearance, systemIsDark: systemIsDark, pairing: skinPairing, skins: allSkins)
+    }
+
+    /// The icon to apply: the stored choice, or the default when its artwork does not exist.
+    public var effectiveIconChoice: IconChoice { AppIcons.effective(iconChoice) }
+
+    /// The connected amp's icon, when suggestions are on and it is not already chosen.
+    public var suggestedIcon: IconChoice? {
+        AppIcons.suggestion(connectedModelID: ampAddress?.modelID, current: iconChoice, enabled: suggestModelIcon)
+    }
 
     public var volumeControl: VolumeControlKind { volumeControlOverride ?? skin.volumeControl }
 
@@ -121,6 +157,22 @@ public final class SettingsStore {
 
     private func store<T: Encodable>(_ value: T, key: String) {
         defaults.set(try? JSONEncoder().encode(value), forKey: key)
+    }
+
+    /// New keys win; otherwise the old single `skinID` (if the user ever picked one) serves both slots and is
+    /// rewritten as the pair, so the legacy key is read exactly once.
+    private static func loadPairing(from defaults: UserDefaults) -> SkinPairing {
+        let light = defaults.string(forKey: Key.lightSkinID)
+        let dark = defaults.string(forKey: Key.darkSkinID)
+        if light != nil || dark != nil {
+            return SkinPairing(lightID: light ?? SkinPairing.default.lightID, darkID: dark ?? SkinPairing.default.darkID)
+        }
+        guard let legacy = defaults.string(forKey: Key.skinID) else { return .default }
+        let migrated = SkinPairing(migratingSingle: legacy)
+        defaults.set(migrated.lightID, forKey: Key.lightSkinID)
+        defaults.set(migrated.darkID, forKey: Key.darkSkinID)
+        defaults.removeObject(forKey: Key.skinID)
+        return migrated
     }
 
     private static func load<T: Decodable>(_ type: T.Type, key: String, from defaults: UserDefaults) -> T? {
